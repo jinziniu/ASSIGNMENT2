@@ -30,39 +30,39 @@ with app.app_context():
     db.create_all()
 
 
-# **手写 JWT 生成**
+
 def generate_jwt(payload, secret):
     header = {"alg": "HS256", "typ": "JWT"}
 
-    # Base64 编码 Header 和 Payload
+
     header_b64 = base64.urlsafe_b64encode(json.dumps(header).encode()).decode().rstrip("=")
     payload_b64 = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode().rstrip("=")
 
-    # 计算 HMAC-SHA256 签名
+
     signature = hmac.new(secret.encode(), f"{header_b64}.{payload_b64}".encode(), hashlib.sha256).digest()
     signature_b64 = base64.urlsafe_b64encode(signature).decode().rstrip("=")
 
     return f"{header_b64}.{payload_b64}.{signature_b64}"
 
 
-# **手写 JWT 解析**
+
 def verify_jwt(token, secret):
     try:
         header_b64, payload_b64, signature_b64 = token.split(".")
 
-        # 重新计算签名
+
         signature_check = hmac.new(secret.encode(), f"{header_b64}.{payload_b64}".encode(), hashlib.sha256).digest()
         expected_signature_b64 = base64.urlsafe_b64encode(signature_check).decode().rstrip("=")
 
-        # 验证签名
+
         if expected_signature_b64 != signature_b64:
             return None
 
-        # 解析 Payload
+
         payload_json = base64.urlsafe_b64decode(payload_b64 + "==").decode()
         payload = json.loads(payload_json)
 
-        # 验证是否过期
+
         if payload.get("exp") and payload["exp"] < int(time.time()):
             return None
 
@@ -71,7 +71,7 @@ def verify_jwt(token, secret):
         return None
 
 
-# **用户注册**
+
 @app.route('/users', methods=['POST'])
 def register():
     data = request.get_json()
@@ -92,7 +92,7 @@ def register():
     return jsonify({"message": "User created successfully"}), 201
 
 
-# **用户登录**
+
 @app.route('/users/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -103,7 +103,7 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({"error": "Invalid credentials"}), 403
 
-    # 生成 JWT
+
     payload = {
         "user_id": user.id,
         "exp": int(time.time()) + 3600  # 1 小时有效期
